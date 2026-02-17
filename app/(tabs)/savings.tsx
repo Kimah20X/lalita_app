@@ -1,0 +1,197 @@
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+
+const mockGoals = [
+  { id: '1', name: 'Business Expansion', saved: 150000, target: 250000, frequency: 'Weekly', icon: 'briefcase' },
+  { id: '2', name: 'Emergency Fund', saved: 45000, target: 200000, frequency: 'Monthly', icon: 'shield-checkmark' },
+  { id: '3', name: 'School Fees', saved: 80000, target: 120000, frequency: 'Daily', icon: 'school' },
+];
+
+export default function Savings() {
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+
+  const renderGoalItem = ({ item }: { item: typeof mockGoals[0] }) => {
+    const progress = (item.saved / item.target) * 100;
+    
+    return (
+      <View style={[styles.goalCard, { backgroundColor: '#FFF' }]}>
+        <View style={styles.goalHeader}>
+          <View style={[styles.goalIconContainer, { backgroundColor: colors.primary + '15' }]}>
+            <Ionicons name={item.icon as any} size={24} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1, marginLeft: 16 }}>
+            <Text style={[styles.goalName, { color: colors.text }]}>{item.name}</Text>
+            <Text style={[styles.goalFrequency, { color: colors.icon }]}>{item.frequency} savings</Text>
+          </View>
+          <TouchableOpacity>
+            <Ionicons name="ellipsis-vertical" size={20} color={colors.icon} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.goalDetails}>
+          <View>
+            <Text style={[styles.detailLabel, { color: colors.icon }]}>Saved</Text>
+            <Text style={[styles.detailValue, { color: colors.primary }]}>₦{item.saved.toLocaleString()}</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={[styles.detailLabel, { color: colors.icon }]}>Target</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>₦{item.target.toLocaleString()}</Text>
+          </View>
+        </View>
+
+        <View style={[styles.progressContainer, { backgroundColor: colors.primary + '10' }]}>
+          <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${progress}%` }]} />
+        </View>
+        <Text style={[styles.progressText, { color: colors.icon }]}>{progress.toFixed(0)}% complete</Text>
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text }]}>My Savings Goals</Text>
+        <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]}>
+          <Ionicons name="add" size={28} color="#FFF" />
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        data={mockGoals}
+        renderItem={renderGoalItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="wallet-outline" size={80} color={colors.icon} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No goals yet</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.icon }]}>Create your first savings goal to start building your future.</Text>
+            <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.primary }]}>
+              <Text style={styles.createBtnText}>Create Goal</Text>
+            </TouchableOpacity>
+          </View>
+        }
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  addBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#9C27B0',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  listContent: {
+    padding: 20,
+    paddingTop: 0,
+  },
+  goalCard: {
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  goalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  goalIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  goalName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  goalFrequency: {
+    fontSize: 12,
+  },
+  goalDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  detailLabel: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  detailValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  progressContainer: {
+    height: 8,
+    borderRadius: 4,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 12,
+    textAlign: 'right',
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 100,
+    paddingHorizontal: 40,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  createBtn: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 16,
+  },
+  createBtnText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});

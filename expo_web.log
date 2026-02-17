@@ -1,0 +1,70 @@
+
+> app@1.0.0 web
+> expo start --web
+
+Starting project at /app
+React Compiler enabled
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Web node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+Web node_modules/expo-router/entry.js ▓▓▓░░░░░░░░░░░░░ 21.3% ( 84/182)
+λ node_modules/expo-router/node/render.js ▓▓░░░░░░░░░░░░░░ 12.6% ( 56/158)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 51.3% (215/340)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓░░░░░░░░░░ 43.6% (311/471)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 56.3% (337/449)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 67.0% (470/589)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 68.2% (512/623)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 73.4% (671/783)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 69.7% (694/831)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 89.3% (847/921)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 87.5% (915/986)
+λ node_modules/expo-router/node/render.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 90.5% ( 936/1000)
+λ Bundled 22944ms node_modules/expo-router/node/render.js (1123 modules)
+"shadow*" style props are deprecated. Use "boxShadow".
+λ  WARN  [Layout children]: Too many screens defined. Route "explore" is extraneous. 
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.1% (1163/1172)
+Web Bundled 26152ms node_modules/expo-router/entry.js (1173 modules)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 48.4% (409/588)
+Web node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 73.5% (798/933)
+Web Bundled 9790ms node_modules/expo-router/entry.js (1174 modules)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 101ms node_modules/expo-router/node/render.js (1 module)
+"shadow*" style props are deprecated. Use "boxShadow".
+λ  WARN  [Layout children]: Too many screens defined. Route "explore" is extraneous. 
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+Web Bundled 980ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 89ms node_modules/expo-router/entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 48ms node_modules/expo-router/node/render.js (1 module)
+"shadow*" style props are deprecated. Use "boxShadow".
+λ  WARN  [Layout children]: Too many screens defined. Route "explore" is extraneous. 
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+Web Bundled 455ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 59ms node_modules/expo-router/entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 62ms node_modules/expo-router/node/render.js (1 module)
+"shadow*" style props are deprecated. Use "boxShadow".
+λ  WARN  [Layout children]: Too many screens defined. Route "explore" is extraneous. 
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+Web Bundled 480ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 55ms node_modules/expo-router/entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 62ms node_modules/expo-router/node/render.js (1 module)
+"shadow*" style props are deprecated. Use "boxShadow".
+λ  WARN  [Layout children]: Too many screens defined. Route "explore" is extraneous. 
+λ  WARN  props.pointerEvents is deprecated. Use style.pointerEvents 
+Web Bundled 548ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 61ms node_modules/expo-router/entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
+Web node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+λ Bundled 50ms node_modules/expo-router/node/render.js (1 module)
+"shadow*" style props are deprecated. Use "boxShadow".
+Web Bundled 467ms node_modules/expo-router/entry.js (1 module)
+Web Bundled 50ms node_modules/expo-router/entry.js (1 module)
+ LOG  [web] Logs will appear in the browser console
