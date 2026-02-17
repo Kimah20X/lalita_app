@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useApp } from '@/context/AppState';
+import { formatCurrency } from '@/utils/format';
+import { useTranslation } from 'react-i18next';
+import CreateSavingsModal from '@/components/CreateSavingsModal';
 
 const mockGoals = [
   { id: '1', name: 'Business Expansion', saved: 150000, target: 250000, frequency: 'Weekly', icon: 'briefcase' },
@@ -11,8 +15,18 @@ const mockGoals = [
 ];
 
 export default function Savings() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const { isMoneyVisible, savingsGoals } = useApp();
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const displayGoals = savingsGoals.length > 0 ? savingsGoals.map(g => ({
+    ...g,
+    saved: g.savedAmount,
+    target: g.targetAmount,
+    icon: g.icon || 'wallet'
+  })) : mockGoals;
 
   const renderGoalItem = ({ item }: { item: typeof mockGoals[0] }) => {
     const progress = (item.saved / item.target) * 100;
@@ -34,19 +48,19 @@ export default function Savings() {
 
         <View style={styles.goalDetails}>
           <View>
-            <Text style={[styles.detailLabel, { color: colors.icon }]}>Saved</Text>
-            <Text style={[styles.detailValue, { color: colors.primary }]}>₦{item.saved.toLocaleString()}</Text>
+            <Text style={[styles.detailLabel, { color: colors.icon }]}>{t('common.saved')}</Text>
+            <Text style={[styles.detailValue, { color: colors.primary }]}>{formatCurrency(item.saved, isMoneyVisible)}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={[styles.detailLabel, { color: colors.icon }]}>Target</Text>
-            <Text style={[styles.detailValue, { color: colors.text }]}>₦{item.target.toLocaleString()}</Text>
+            <Text style={[styles.detailLabel, { color: colors.icon }]}>{t('common.target')}</Text>
+            <Text style={[styles.detailValue, { color: colors.text }]}>{formatCurrency(item.target, isMoneyVisible)}</Text>
           </View>
         </View>
 
         <View style={[styles.progressContainer, { backgroundColor: colors.primary + '10' }]}>
           <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${progress}%` }]} />
         </View>
-        <Text style={[styles.progressText, { color: colors.icon }]}>{progress.toFixed(0)}% complete</Text>
+        <Text style={[styles.progressText, { color: colors.icon }]}>{progress.toFixed(0)}% {t('common.complete')}</Text>
       </View>
     );
   };
@@ -54,24 +68,32 @@ export default function Savings() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>My Savings Goals</Text>
-        <TouchableOpacity style={[styles.addBtn, { backgroundColor: colors.primary }]}>
+        <Text style={[styles.title, { color: colors.text }]}>{t('common.savings_goals')}</Text>
+        <TouchableOpacity
+          style={[styles.addBtn, { backgroundColor: colors.primary }]}
+          onPress={() => setModalVisible(true)}
+        >
           <Ionicons name="add" size={28} color="#FFF" />
         </TouchableOpacity>
       </View>
 
+      <CreateSavingsModal visible={modalVisible} onClose={() => setModalVisible(false)} />
+
       <FlatList
-        data={mockGoals}
+        data={displayGoals}
         renderItem={renderGoalItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="wallet-outline" size={80} color={colors.icon} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No goals yet</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.icon }]}>Create your first savings goal to start building your future.</Text>
-            <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.primary }]}>
-              <Text style={styles.createBtnText}>Create Goal</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>{t('common.no_goals')}</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.icon }]}>{t('common.create_first_goal')}</Text>
+            <TouchableOpacity
+              style={[styles.createBtn, { backgroundColor: colors.primary }]}
+              onPress={() => setModalVisible(true)}
+            >
+              <Text style={styles.createBtnText}>{t('common.create_goal')}</Text>
             </TouchableOpacity>
           </View>
         }
