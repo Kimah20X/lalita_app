@@ -3,17 +3,22 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } fr
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useApp } from '@/context/AppState';
+import { formatCurrency } from '@/utils/format';
+import { useTranslation } from 'react-i18next';
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const { totalBalance, totalDeposits, totalWithdrawals, isMoneyVisible, toggleMoneyVisibility, savingsGoals, ajoGroups } = useApp();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <View>
-            <Text style={[styles.welcomeText, { color: colors.icon }]}>Welcome back,</Text>
+            <Text style={[styles.welcomeText, { color: colors.icon }]}>{t('common.welcome')}</Text>
             <Text style={[styles.userName, { color: colors.text }]}>Esther Danjuma</Text>
           </View>
           <TouchableOpacity style={[styles.notificationBtn, { borderColor: colors.border }]}>
@@ -24,14 +29,16 @@ export default function Dashboard() {
 
         {/* Total Savings Card */}
         <View style={[styles.savingsCard, { backgroundColor: colors.primary }]}>
-          <Text style={styles.savingsLabel}>Total Savings</Text>
-          <Text style={styles.savingsAmount}>₦250,000.00</Text>
+          <Text style={styles.savingsLabel}>{t('common.total_savings')}</Text>
+          <Text style={styles.savingsAmount}>{formatCurrency(250000, isMoneyVisible)}</Text>
           <View style={styles.savingsFooter}>
             <View>
-              <Text style={styles.availableLabel}>Available Balance</Text>
-              <Text style={styles.availableAmount}>₦45,000.00</Text>
+              <Text style={styles.availableLabel}>{t('common.available_balance')}</Text>
+              <Text style={styles.availableAmount}>{formatCurrency(totalBalance, isMoneyVisible)}</Text>
             </View>
-            <Ionicons name="eye-outline" size={24} color="#FFF" />
+            <TouchableOpacity onPress={toggleMoneyVisibility}>
+              <Ionicons name={isMoneyVisible ? "eye-outline" : "eye-off-outline"} size={24} color="#FFF" />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -39,64 +46,84 @@ export default function Dashboard() {
         <View style={styles.actionContainer}>
           <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.primary }]}>
             <Ionicons name="add-circle" size={24} color="#FFF" />
-            <Text style={styles.actionText}>Deposit</Text>
+            <Text style={styles.actionText}>{t('common.deposit')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionBtn, { backgroundColor: '#FFF', borderWidth: 1, borderColor: colors.primary }]}>
             <Ionicons name="remove-circle" size={24} color={colors.primary} />
-            <Text style={[styles.actionText, { color: colors.primary }]}>Withdraw</Text>
+            <Text style={[styles.actionText, { color: colors.primary }]}>{t('common.withdraw')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Stats Summary */}
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: '#FFF' }]}>
-            <Text style={[styles.statLabel, { color: colors.icon }]}>Total Deposits</Text>
-            <Text style={[styles.statValue, { color: colors.success }]}>₦200,000</Text>
+            <Text style={[styles.statLabel, { color: colors.icon }]}>{t('common.total_deposits')}</Text>
+            <Text style={[styles.statValue, { color: colors.success }]}>{formatCurrency(totalDeposits, isMoneyVisible)}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#FFF' }]}>
-            <Text style={[styles.statLabel, { color: colors.icon }]}>Total Withdrawals</Text>
-            <Text style={[styles.statValue, { color: colors.error }]}>₦155,000</Text>
+            <Text style={[styles.statLabel, { color: colors.icon }]}>{t('common.total_withdrawals')}</Text>
+            <Text style={[styles.statValue, { color: colors.error }]}>{formatCurrency(totalWithdrawals, isMoneyVisible)}</Text>
           </View>
         </View>
 
         {/* Savings Goals Preview */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Savings Goals</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('common.savings_goals')}</Text>
           <TouchableOpacity>
-            <Text style={{ color: colors.primary, fontWeight: '600' }}>See All</Text>
+            <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('common.see_all')}</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={[styles.goalCard, { backgroundColor: '#FFF' }]}>
-          <View style={styles.goalHeader}>
-            <View style={[styles.goalIcon, { backgroundColor: colors.primary + '20' }]}>
-              <Ionicons name="briefcase" size={20} color={colors.primary} />
+        {savingsGoals.length > 0 ? (
+          <View style={[styles.goalCard, { backgroundColor: '#FFF' }]}>
+            <View style={styles.goalHeader}>
+              <View style={[styles.goalIcon, { backgroundColor: colors.primary + '20' }]}>
+                <Ionicons name="briefcase" size={20} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[styles.goalName, { color: colors.text }]}>{savingsGoals[0].name}</Text>
+                <Text style={[styles.goalProgressText, { color: colors.icon }]}>
+                  {Math.round((savingsGoals[0].savedAmount / savingsGoals[0].targetAmount) * 100)}% complete
+                </Text>
+              </View>
+              <Text style={[styles.goalAmount, { color: colors.primary }]}>
+                {formatCurrency(savingsGoals[0].savedAmount, isMoneyVisible)}/{formatCurrency(savingsGoals[0].targetAmount, isMoneyVisible)}
+              </Text>
             </View>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={[styles.goalName, { color: colors.text }]}>Business Expansion</Text>
-              <Text style={[styles.goalProgressText, { color: colors.icon }]}>60% complete</Text>
+            <View style={[styles.progressBarBg, { backgroundColor: colors.primary + '10' }]}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    backgroundColor: colors.primary,
+                    width: `${Math.min(100, (savingsGoals[0].savedAmount / savingsGoals[0].targetAmount) * 100)}%`
+                  }
+                ]}
+              />
             </View>
-            <Text style={[styles.goalAmount, { color: colors.primary }]}>₦150k/₦250k</Text>
           </View>
-          <View style={[styles.progressBarBg, { backgroundColor: colors.primary + '10' }]}>
-            <View style={[styles.progressBarFill, { backgroundColor: colors.primary, width: '60%' }]} />
-          </View>
-        </View>
+        ) : null}
 
         {/* Ajo Summary Preview */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Ajo Groups</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>{t('common.ajo_groups')}</Text>
           <TouchableOpacity>
-            <Text style={{ color: colors.primary, fontWeight: '600' }}>See All</Text>
+            <Text style={{ color: colors.primary, fontWeight: '600' }}>{t('common.see_all')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={[styles.ajoSummaryCard, { backgroundColor: colors.primary + '10' }]}>
           <View style={styles.ajoSummaryInfo}>
             <Ionicons name="people" size={24} color={colors.primary} />
-            <Text style={[styles.ajoSummaryText, { color: colors.text }]}>You are in 2 active Ajo groups</Text>
+            <Text style={[styles.ajoSummaryText, { color: colors.text }]}>
+              {ajoGroups.length > 0 ? `You are in ${ajoGroups.length} active Ajo groups` : 'No active Ajo groups'}
+            </Text>
           </View>
-          <Text style={[styles.ajoContributionText, { color: colors.icon }]}>Next contribution: ₦5,000 on Oct 25</Text>
+          {ajoGroups.length > 0 && (
+            <Text style={[styles.ajoContributionText, { color: colors.icon }]}>
+              Next contribution: {formatCurrency(ajoGroups[0].contributionAmount, isMoneyVisible)} on Oct 25
+            </Text>
+          )}
         </View>
 
       </ScrollView>

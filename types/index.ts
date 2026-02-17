@@ -38,4 +38,7 @@ export interface AppState {
   totalBalance: number;
   totalDeposits: number;
   totalWithdrawals: number;
+  isMoneyVisible: boolean;
+  language: 'en' | 'ha' | 'yo' | 'ig';
+  theme: 'light' | 'dark';
 }
