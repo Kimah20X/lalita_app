@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String         @id @default(uuid())
+  phoneNumber  String         @unique
+  password     String
+  fullName     String
+  businessType String?
+  balance      Float          @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  savingsGoals SavingsGoal[]
+  ajoMembers   AjoMember[]
+  transactions Transaction[]
+  ajoGroups    AjoGroup[]     @relation("GroupCreator")
+}
+
+model SavingsGoal {
+  id           String         @id @default(uuid())
+  title        String
+  targetAmount Float
+  currentAmount Float          @default(0)
+  frequency    Frequency
+  userId       String
+  user         User           @relation(fields: [userId], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  transactions Transaction[]
+}
+
+model AjoGroup {
+  id                 String      @id @default(uuid())
+  name               String
+  contributionAmount Float
+  frequency          Frequency
+  creatorId          String
+  creator            User        @relation("GroupCreator", fields: [creatorId], references: [id])
+  members            AjoMember[]
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  transactions       Transaction[]
+}
+
+model AjoMember {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  groupId   String
+  group     AjoGroup @relation(fields: [groupId], references: [id])
+  joinedAt  DateTime @default(now())
+
+  @@unique([userId, groupId])
+}
+
+model Transaction {
+  id             String          @id @default(uuid())
+  type           TransactionType
+  amount         Float
+  userId         String
+  user           User            @relation(fields: [userId], references: [id])
+  relatedGoalId  String?
+  goal           SavingsGoal?    @relation(fields: [relatedGoalId], references: [id])
+  relatedGroupId String?
+  group          AjoGroup?       @relation(fields: [relatedGroupId], references: [id])
+  createdAt      DateTime        @default(now())
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  AJO_CONTRIBUTION
+}
