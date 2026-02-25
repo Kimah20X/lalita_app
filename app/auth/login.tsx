@@ -4,20 +4,35 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useApp } from '@/context/AppState';
+import { Alert } from 'react-native';
 
 export default function Login() {
   const router = useRouter();
+  const { login } = useApp();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     phoneNumber: '',
     password: '',
   });
 
-  const handleLogin = () => {
-    // Logic will be added with State management
-    router.replace('/(tabs)');
+  const handleLogin = async () => {
+    if (!form.phoneNumber || !form.password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+    setLoading(true);
+    try {
+      await login(form.phoneNumber, form.password);
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.response?.data?.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -63,10 +78,11 @@ export default function Login() {
           </View>
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.primary }]}
+            style={[styles.button, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
             onPress={handleLogin}
+            disabled={loading}
           >
-            <Text style={styles.buttonText}>Login</Text>
+            <Text style={styles.buttonText}>{loading ? 'Logging in...' : 'Login'}</Text>
           </TouchableOpacity>
 
           <View style={styles.footer}>

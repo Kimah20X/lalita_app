@@ -18,6 +18,7 @@ export interface SavingsGoal {
   createdAt: string;
   targetDate?: string;
   category?: string;
+  icon?: string;
 }
 
 export interface AjoGroup {
@@ -28,14 +29,21 @@ export interface AjoGroup {
   membersCount: number;
   contributionAmount: number;
   nextPayoutDate?: string;
-  status: 'Active' | 'Completed';
+  status: 'OPEN' | 'ACTIVE' | 'COMPLETED';
+  creatorId: string;
+  members?: any[];
+  currentCycle?: number;
 }
 
 export interface AppState {
   user: User | null;
   savingsGoals: SavingsGoal[];
   ajoGroups: AjoGroup[];
+  recentTransactions: any[];
   totalBalance: number;
   totalDeposits: number;
   totalWithdrawals: number;
+  isMoneyVisible: boolean;
+  language: 'en' | 'ha' | 'yo' | 'ig';
+  theme: 'light' | 'dark';
 }

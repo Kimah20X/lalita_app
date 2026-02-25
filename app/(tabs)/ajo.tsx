@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useApp } from '@/context/AppState';
+import { formatCurrency } from '@/utils/format';
+import { useTranslation } from 'react-i18next';
+import CreateAjoModal from '@/components/CreateAjoModal';
+import { Alert } from 'react-native';
+import SkeletonLoader from '@/components/SkeletonLoader';
 
 const mockAjoGroups = [
   { 
@@ -28,10 +34,47 @@ const mockAjoGroups = [
 ];
 
 export default function Ajo() {
+  const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const { isMoneyVisible, ajoGroups, user, startAjoGroup, contributeToAjo, isLoading } = useApp();
+  const [modalVisible, setModalVisible] = useState(false);
 
-  const renderAjoItem = ({ item }: { item: typeof mockAjoGroups[0] }) => {
+  const handleStartGroup = async (id: string) => {
+    try {
+      await startAjoGroup(id);
+      Alert.alert('Success', 'Group started and rotation assigned!');
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to start group');
+    }
+  };
+
+  const handleContribute = async (id: string) => {
+    try {
+      await contributeToAjo(id);
+      Alert.alert('Success', 'Contribution successful!');
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to contribute');
+    }
+  };
+
+  const displayGroups = ajoGroups.length > 0 ? ajoGroups.map(g => {
+    const userMember = (g as any).members?.find((m: any) => m.userId === user?.id);
+    const currentPayoutMember = (g as any).members?.find((m: any) => m.payoutOrder === (g as any).currentCycle);
+
+    return {
+      ...g,
+      members: g.membersCount,
+      contribution: g.contributionAmount,
+      totalSaved: (g as any).currentCycle ? (g as any).currentCycle * g.contributionAmount * g.membersCount : 0,
+      target: g.targetAmount,
+      status: g.status,
+      nextPayout: currentPayoutMember?.userId === user?.id ? 'You (Your Turn!)' : (currentPayoutMember ? 'Member ' + currentPayoutMember.payoutOrder : 'TBD'),
+      yourOrder: userMember?.payoutOrder
+    };
+  }) : mockAjoGroups;
+
+  const renderAjoItem = ({ item }: { item: any }) => {
     const progress = (item.totalSaved / item.target) * 100;
     
     return (
@@ -42,7 +85,9 @@ export default function Ajo() {
           </View>
           <View style={{ flex: 1, marginLeft: 16 }}>
             <Text style={[styles.ajoName, { color: colors.text }]}>{item.name}</Text>
-            <Text style={[styles.ajoMembers, { color: colors.icon }]}>{item.members} Members • ₦{item.contribution.toLocaleString()}/mo</Text>
+            <Text style={[styles.ajoMembers, { color: colors.icon }]}>
+              {item.members} {t('common.members')} • {formatCurrency(item.contribution, isMoneyVisible)}/mo
+            </Text>
           </View>
           <View style={[styles.statusBadge, { backgroundColor: colors.success + '20' }]}>
             <Text style={[styles.statusText, { color: colors.success }]}>{item.status}</Text>
@@ -51,7 +96,7 @@ export default function Ajo() {
 
         <View style={styles.ajoDetails}>
           <View style={styles.detailItem}>
-            <Text style={[styles.detailLabel, { color: colors.icon }]}>Group Progress</Text>
+            <Text style={[styles.detailLabel, { color: colors.icon }]}>{t('common.group_progress')}</Text>
             <View style={styles.progressRow}>
               <View style={[styles.progressBarBg, { backgroundColor: colors.primary + '10' }]}>
                 <View style={[styles.progressBarFill, { backgroundColor: colors.primary, width: `${progress}%` }]} />
@@ -62,14 +107,32 @@ export default function Ajo() {
           
           <View style={styles.payoutContainer}>
             <Ionicons name="gift-outline" size={16} color={colors.primary} />
-            <Text style={[styles.payoutText, { color: colors.text }]}>Next Payout: </Text>
+            <Text style={[styles.payoutText, { color: colors.text }]}>{t('common.next_payout')}: </Text>
             <Text style={[styles.payoutName, { color: colors.primary }]}>{item.nextPayout}</Text>
           </View>
         </View>
 
-        <TouchableOpacity style={[styles.viewBtn, { borderColor: colors.primary }]}>
-          <Text style={[styles.viewBtnText, { color: colors.primary }]}>View Group Details</Text>
-        </TouchableOpacity>
+        <View style={styles.cardActions}>
+          {(item as any).status === 'OPEN' && (item as any).creatorId === user?.id && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.primary }]}
+              onPress={() => handleStartGroup(item.id)}
+            >
+              <Text style={styles.actionBtnText}>Start Group</Text>
+            </TouchableOpacity>
+          )}
+          {(item as any).status === 'ACTIVE' && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.primary }]}
+              onPress={() => handleContribute(item.id)}
+            >
+              <Text style={styles.actionBtnText}>Contribute</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={[styles.viewBtn, { borderColor: colors.primary }]}>
+            <Text style={[styles.viewBtnText, { color: colors.primary }]}>Details</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -77,17 +140,31 @@ export default function Ajo() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Ajo Groups</Text>
-        <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.primary }]}>
+        <Text style={[styles.title, { color: colors.text }]}>{t('common.ajo_groups')}</Text>
+        <TouchableOpacity
+          style={[styles.createBtn, { backgroundColor: colors.primary }]}
+          onPress={() => setModalVisible(true)}
+        >
           <Ionicons name="add" size={24} color="#FFF" />
-          <Text style={styles.createBtnText}>Create Group</Text>
+          <Text style={styles.createBtnText}>{t('common.create_group')}</Text>
         </TouchableOpacity>
       </View>
 
+      <CreateAjoModal visible={modalVisible} onClose={() => setModalVisible(false)} />
+
+      {isLoading ? (
+        <View style={{ padding: 20 }}>
+          <SkeletonLoader width="100%" height={100} borderRadius={24} style={{ marginBottom: 24 }} />
+          {[1, 2].map(i => (
+            <SkeletonLoader key={i} width="100%" height={200} borderRadius={24} style={{ marginBottom: 16 }} />
+          ))}
+        </View>
+      ) : (
+      <>
       <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
         <View>
           <Text style={styles.summaryLabel}>Total Contributions</Text>
-          <Text style={styles.summaryValue}>₦45,000.00</Text>
+          <Text style={styles.summaryValue}>{formatCurrency(45000, isMoneyVisible)}</Text>
         </View>
         <View style={styles.summaryIcon}>
           <Ionicons name="trending-up" size={32} color="rgba(255,255,255,0.6)" />
@@ -95,7 +172,7 @@ export default function Ajo() {
       </View>
 
       <FlatList
-        data={mockAjoGroups}
+        data={displayGroups}
         renderItem={renderAjoItem}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
@@ -108,13 +185,15 @@ export default function Ajo() {
               <Ionicons name="search" size={24} color={colors.primary} />
             </View>
             <View style={{ flex: 1, marginLeft: 16 }}>
-              <Text style={[styles.discoverTitle, { color: colors.text }]}>Discover New Groups</Text>
-              <Text style={[styles.discoverSubtitle, { color: colors.icon }]}>Join other women traders in your area.</Text>
+              <Text style={[styles.discoverTitle, { color: colors.text }]}>{t('common.discover_groups')}</Text>
+              <Text style={[styles.discoverSubtitle, { color: colors.icon }]}>{t('common.join_women')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.icon} />
           </TouchableOpacity>
         }
       />
+      </>
+      )}
     </SafeAreaView>
   );
 }
@@ -265,7 +344,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: 'bold',
   },
+  cardActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   viewBtn: {
+    flex: 1,
     height: 48,
     borderRadius: 12,
     borderWidth: 1,

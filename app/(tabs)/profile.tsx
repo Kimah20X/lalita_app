@@ -4,19 +4,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useRouter } from 'expo-router';
+import { useApp } from '@/context/AppState';
+import { useTranslation } from 'react-i18next';
 
 export default function Profile() {
+  const { t } = useTranslation();
   const router = useRouter();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const { user, theme, setTheme, language, setLanguage } = useApp();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const settingsOptions = [
-    { icon: 'person-outline', label: 'Personal Information', value: '' },
-    { icon: 'shield-outline', label: 'Security & Password', value: '' },
-    { icon: 'card-outline', label: 'Payment Methods', value: '' },
-    { icon: 'help-circle-outline', label: 'Help & Support', value: '' },
-    { icon: 'information-circle-outline', label: 'About Lalita', value: 'v1.0.0' },
+    { icon: 'person-outline', label: t('common.personal_info'), route: '/profile/personal-info' },
+    { icon: 'shield-outline', label: t('common.security'), route: '/profile/security' },
+    { icon: 'card-outline', label: t('common.payment_methods'), route: '/profile/payment-methods' },
+    { icon: 'help-circle-outline', label: t('common.help_support'), route: '/profile/help' },
+    { icon: 'information-circle-outline', label: t('common.about'), value: 'v1.0.0', route: null },
   ];
 
   return (
@@ -31,12 +35,14 @@ export default function Profile() {
 
         <View style={[styles.userCard, { backgroundColor: '#FFF' }]}>
           <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={styles.avatarText}>ED</Text>
+            <Text style={styles.avatarText}>
+              {user?.fullName?.split(' ').map(n => n[0]).join('') || 'ED'}
+            </Text>
           </View>
-          <Text style={[styles.userName, { color: colors.text }]}>Esther Danjuma</Text>
-          <Text style={[styles.userPhone, { color: colors.icon }]}>+234 801 234 5678</Text>
+          <Text style={[styles.userName, { color: colors.text }]}>{user?.fullName || 'Esther Danjuma'}</Text>
+          <Text style={[styles.userPhone, { color: colors.icon }]}>{user?.phoneNumber || '+234 801 234 5678'}</Text>
           <View style={[styles.businessBadge, { backgroundColor: colors.primary + '15' }]}>
-            <Text style={[styles.businessText, { color: colors.primary }]}>Fashion Designer</Text>
+            <Text style={[styles.businessText, { color: colors.primary }]}>{user?.businessType || 'Fashion Designer'}</Text>
           </View>
         </View>
 
@@ -57,15 +63,47 @@ export default function Profile() {
               />
             </View>
             <View style={[styles.settingDivider, { backgroundColor: colors.border }]} />
-            <TouchableOpacity style={styles.settingItem}>
+            <View style={styles.settingItem}>
               <View style={styles.settingLeft}>
                 <View style={[styles.settingIcon, { backgroundColor: colors.primary + '10' }]}>
                   <Ionicons name="moon" size={20} color={colors.primary} />
                 </View>
-                <Text style={[styles.settingLabel, { color: colors.text }]}>Dark Mode</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>{t('common.dark_mode')}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.icon} />
-            </TouchableOpacity>
+              <Switch
+                value={theme === 'dark'}
+                onValueChange={(val) => setTheme(val ? 'dark' : 'light')}
+                trackColor={{ false: colors.border, true: colors.primary }}
+              />
+            </View>
+            <View style={[styles.settingDivider, { backgroundColor: colors.border }]} />
+            <View style={styles.settingItem}>
+              <View style={styles.settingLeft}>
+                <View style={[styles.settingIcon, { backgroundColor: colors.primary + '10' }]}>
+                  <Ionicons name="language" size={20} color={colors.primary} />
+                </View>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Language</Text>
+              </View>
+              <View style={styles.langSelector}>
+                {(['en', 'ha', 'yo', 'ig'] as const).map((lang) => (
+                  <TouchableOpacity
+                    key={lang}
+                    onPress={() => setLanguage(lang)}
+                    style={[
+                      styles.langBtn,
+                      language === lang && { backgroundColor: colors.primary }
+                    ]}
+                  >
+                    <Text style={[
+                      styles.langBtnText,
+                      { color: language === lang ? '#FFF' : colors.primary }
+                    ]}>
+                      {lang.toUpperCase()}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
           </View>
         </View>
 
@@ -74,7 +112,10 @@ export default function Profile() {
           <View style={[styles.settingsList, { backgroundColor: '#FFF' }]}>
             {settingsOptions.map((item, index) => (
               <React.Fragment key={item.label}>
-                <TouchableOpacity style={styles.settingItem}>
+                <TouchableOpacity
+                  style={styles.settingItem}
+                  onPress={() => item.route && router.push(item.route as any)}
+                >
                   <View style={styles.settingLeft}>
                     <View style={[styles.settingIcon, { backgroundColor: colors.primary + '10' }]}>
                       <Ionicons name={item.icon as any} size={20} color={colors.primary} />
@@ -222,6 +263,21 @@ const styles = StyleSheet.create({
   settingDivider: {
     height: 1,
     marginHorizontal: 16,
+  },
+  langSelector: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  langBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#9C27B0',
+  },
+  langBtnText: {
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   deleteBtn: {
     marginTop: 8,
