@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { User, SavingsGoal, AjoGroup } from '@/types';
-import { getItem, saveItem, deleteItem, STORAGE_KEYS } from '@/utils/storage';
+import { getItem, saveItem, removeItem, STORAGE_KEYS } from '@/utils/storage';
 import i18n from '@/i18n';
 import { AppContext, AppContextType } from './AppContext';
 import api from '@/utils/api';
@@ -142,7 +142,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = async () => {
-    await deleteItem('jwt_token');
+    await removeItem('jwt_token');
     setUser(null);
   };
 

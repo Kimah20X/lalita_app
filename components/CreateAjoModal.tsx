@@ -26,6 +26,7 @@ export default function CreateAjoModal({ visible, onClose }: CreateAjoModalProps
       contributionAmount: parseFloat(amount),
       membersCount: members,
       targetAmount: parseFloat(amount) * members,
+      creatorId: '', // Handled by backend via token
     });
     setName('');
     setAmount('');

@@ -18,6 +18,7 @@ export interface SavingsGoal {
   createdAt: string;
   targetDate?: string;
   category?: string;
+  icon?: string;
 }
 
 export interface AjoGroup {

@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { getItem } from './storage';
+import Constants from 'expo-constants';
 
-const API_BASE_URL = 'http://localhost:3000'; // Change to your server IP for physical devices
+const API_BASE_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
