@@ -7,6 +7,7 @@ import { useApp } from '@/context/AppState';
 import { formatCurrency } from '@/utils/format';
 import { useTranslation } from 'react-i18next';
 import CreateSavingsModal from '@/components/CreateSavingsModal';
+import SkeletonLoader from '@/components/SkeletonLoader';
 
 const mockGoals = [
   { id: '1', name: 'Business Expansion', saved: 150000, target: 250000, frequency: 'Weekly', icon: 'briefcase' },
@@ -18,7 +19,7 @@ export default function Savings() {
   const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { isMoneyVisible, savingsGoals } = useApp();
+  const { isMoneyVisible, savingsGoals, isLoading } = useApp();
   const [modalVisible, setModalVisible] = useState(false);
 
   const displayGoals = savingsGoals.length > 0 ? savingsGoals.map(g => ({
@@ -79,6 +80,13 @@ export default function Savings() {
 
       <CreateSavingsModal visible={modalVisible} onClose={() => setModalVisible(false)} />
 
+      {isLoading ? (
+        <View style={{ padding: 20 }}>
+          {[1, 2, 3].map(i => (
+            <SkeletonLoader key={i} width="100%" height={150} borderRadius={24} style={{ marginBottom: 16 }} />
+          ))}
+        </View>
+      ) : (
       <FlatList
         data={displayGoals}
         renderItem={renderGoalItem}
@@ -98,6 +106,7 @@ export default function Savings() {
           </View>
         }
       />
+      )}
     </SafeAreaView>
   );
 }

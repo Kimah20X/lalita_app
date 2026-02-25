@@ -7,6 +7,8 @@ import { useApp } from '@/context/AppState';
 import { formatCurrency } from '@/utils/format';
 import { useTranslation } from 'react-i18next';
 import CreateAjoModal from '@/components/CreateAjoModal';
+import { Alert } from 'react-native';
+import SkeletonLoader from '@/components/SkeletonLoader';
 
 const mockAjoGroups = [
   { 
@@ -35,19 +37,44 @@ export default function Ajo() {
   const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { isMoneyVisible, ajoGroups } = useApp();
+  const { isMoneyVisible, ajoGroups, user, startAjoGroup, contributeToAjo, isLoading } = useApp();
   const [modalVisible, setModalVisible] = useState(false);
 
-  const displayGroups = ajoGroups.length > 0 ? ajoGroups.map(g => ({
-    ...g,
-    members: g.membersCount,
-    contribution: g.contributionAmount,
-    totalSaved: g.totalContributions,
-    target: g.targetAmount,
-    nextPayout: g.nextPayoutDate || 'TBD'
-  })) : mockAjoGroups;
+  const handleStartGroup = async (id: string) => {
+    try {
+      await startAjoGroup(id);
+      Alert.alert('Success', 'Group started and rotation assigned!');
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to start group');
+    }
+  };
 
-  const renderAjoItem = ({ item }: { item: typeof mockAjoGroups[0] }) => {
+  const handleContribute = async (id: string) => {
+    try {
+      await contributeToAjo(id);
+      Alert.alert('Success', 'Contribution successful!');
+    } catch (e: any) {
+      Alert.alert('Error', e.response?.data?.message || 'Failed to contribute');
+    }
+  };
+
+  const displayGroups = ajoGroups.length > 0 ? ajoGroups.map(g => {
+    const userMember = (g as any).members?.find((m: any) => m.userId === user?.id);
+    const currentPayoutMember = (g as any).members?.find((m: any) => m.payoutOrder === (g as any).currentCycle);
+
+    return {
+      ...g,
+      members: g.membersCount,
+      contribution: g.contributionAmount,
+      totalSaved: (g as any).currentCycle ? (g as any).currentCycle * g.contributionAmount * g.membersCount : 0,
+      target: g.targetAmount,
+      status: g.status,
+      nextPayout: currentPayoutMember?.userId === user?.id ? 'You (Your Turn!)' : (currentPayoutMember ? 'Member ' + currentPayoutMember.payoutOrder : 'TBD'),
+      yourOrder: userMember?.payoutOrder
+    };
+  }) : mockAjoGroups;
+
+  const renderAjoItem = ({ item }: { item: any }) => {
     const progress = (item.totalSaved / item.target) * 100;
     
     return (
@@ -85,9 +112,27 @@ export default function Ajo() {
           </View>
         </View>
 
-        <TouchableOpacity style={[styles.viewBtn, { borderColor: colors.primary }]}>
-          <Text style={[styles.viewBtnText, { color: colors.primary }]}>View Group Details</Text>
-        </TouchableOpacity>
+        <View style={styles.cardActions}>
+          {(item as any).status === 'OPEN' && (item as any).creatorId === user?.id && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.primary }]}
+              onPress={() => handleStartGroup(item.id)}
+            >
+              <Text style={styles.actionBtnText}>Start Group</Text>
+            </TouchableOpacity>
+          )}
+          {(item as any).status === 'ACTIVE' && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { backgroundColor: colors.primary }]}
+              onPress={() => handleContribute(item.id)}
+            >
+              <Text style={styles.actionBtnText}>Contribute</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={[styles.viewBtn, { borderColor: colors.primary }]}>
+            <Text style={[styles.viewBtnText, { color: colors.primary }]}>Details</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -107,6 +152,15 @@ export default function Ajo() {
 
       <CreateAjoModal visible={modalVisible} onClose={() => setModalVisible(false)} />
 
+      {isLoading ? (
+        <View style={{ padding: 20 }}>
+          <SkeletonLoader width="100%" height={100} borderRadius={24} style={{ marginBottom: 24 }} />
+          {[1, 2].map(i => (
+            <SkeletonLoader key={i} width="100%" height={200} borderRadius={24} style={{ marginBottom: 16 }} />
+          ))}
+        </View>
+      ) : (
+      <>
       <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
         <View>
           <Text style={styles.summaryLabel}>Total Contributions</Text>
@@ -138,6 +192,8 @@ export default function Ajo() {
           </TouchableOpacity>
         }
       />
+      </>
+      )}
     </SafeAreaView>
   );
 }
@@ -288,7 +344,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: 'bold',
   },
+  cardActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionBtn: {
+    flex: 1,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionBtnText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   viewBtn: {
+    flex: 1,
     height: 48,
     borderRadius: 12,
     borderWidth: 1,

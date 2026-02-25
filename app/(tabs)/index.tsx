@@ -6,12 +6,13 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useApp } from '@/context/AppState';
 import { formatCurrency } from '@/utils/format';
 import { useTranslation } from 'react-i18next';
+import SkeletonLoader from '@/components/SkeletonLoader';
 
 export default function Dashboard() {
   const { t } = useTranslation();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { totalBalance, totalDeposits, totalWithdrawals, isMoneyVisible, toggleMoneyVisibility, savingsGoals, ajoGroups } = useApp();
+  const { totalBalance, totalDeposits, totalWithdrawals, isMoneyVisible, toggleMoneyVisibility, savingsGoals, ajoGroups, isLoading } = useApp();
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -74,7 +75,9 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
-        {savingsGoals.length > 0 ? (
+        {isLoading ? (
+          <SkeletonLoader width="100%" height={100} borderRadius={20} style={{ marginBottom: 24 }} />
+        ) : savingsGoals.length > 0 ? (
           <View style={[styles.goalCard, { backgroundColor: '#FFF' }]}>
             <View style={styles.goalHeader}>
               <View style={[styles.goalIcon, { backgroundColor: colors.primary + '20' }]}>
@@ -112,6 +115,9 @@ export default function Dashboard() {
           </TouchableOpacity>
         </View>
 
+        {isLoading ? (
+          <SkeletonLoader width="100%" height={80} borderRadius={20} style={{ marginBottom: 30 }} />
+        ) : (
         <View style={[styles.ajoSummaryCard, { backgroundColor: colors.primary + '10' }]}>
           <View style={styles.ajoSummaryInfo}>
             <Ionicons name="people" size={24} color={colors.primary} />
@@ -125,6 +131,7 @@ export default function Dashboard() {
             </Text>
           )}
         </View>
+        )}
 
       </ScrollView>
     </SafeAreaView>

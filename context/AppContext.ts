@@ -11,6 +11,7 @@ export interface AppContextType extends AppState {
   setAjoGroups: (groups: AjoGroup[]) => void;
   addAjoGroup: (group: Omit<AjoGroup, 'id' | 'status' | 'totalContributions'>) => void;
   joinAjoGroup: (groupId: string) => Promise<void>;
+  startAjoGroup: (groupId: string) => Promise<void>;
   contributeToAjo: (groupId: string) => Promise<void>;
   depositToGoal: (goalId: string, amount: number) => Promise<void>;
   withdrawFromGoal: (goalId: string, amount: number) => Promise<void>;

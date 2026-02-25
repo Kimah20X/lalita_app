@@ -4,6 +4,7 @@ import { getItem, saveItem, deleteItem, STORAGE_KEYS } from '@/utils/storage';
 import i18n from '@/i18n';
 import { AppContext, AppContextType } from './AppContext';
 import api from '@/utils/api';
+import { registerForPushNotificationsAsync } from '@/utils/notifications';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUserState] = useState<User | null>(null);
@@ -40,6 +41,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       
       if (storedUser) {
         await refreshData();
+        setupPushNotifications();
       }
     } catch (error) {
       console.error('Failed to load initial data', error);
@@ -51,6 +53,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setUser = (newUser: User | null) => {
     setUserState(newUser);
     saveItem(STORAGE_KEYS.USER, newUser);
+    if (newUser) setupPushNotifications();
+  };
+
+  const setupPushNotifications = async () => {
+    try {
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        await api.post('/auth/push-token', { token });
+      }
+    } catch (error) {
+      console.log('Error setting up push notifications', error);
+    }
   };
 
   const login = async (phoneNumber: string, password: string) => {
@@ -71,6 +85,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await refreshData();
     } catch (error) {
       console.error('Failed to join Ajo group', error);
+      throw error;
+    }
+  };
+
+  const startAjoGroup = async (groupId: string) => {
+    try {
+      await api.post(`/ajo/${groupId}/start`);
+      await refreshData();
+    } catch (error) {
+      console.error('Failed to start Ajo group', error);
       throw error;
     }
   };
@@ -148,11 +172,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const groups = groupsRes.data.data.map((g: any) => ({
         id: g.id,
         name: g.name,
-        totalContributions: 0, // Should be fetched from transactions/members
-        targetAmount: g.contributionAmount * 50, // Mocked max members for now
+        totalContributions: g.currentCycle ? (g.currentCycle - 1) * g.contributionAmount * g._count.members : 0,
+        targetAmount: g.contributionAmount * g._count.members,
         membersCount: g._count.members,
         contributionAmount: g.contributionAmount,
-        status: 'Active'
+        status: g.status,
+        creatorId: g.creatorId,
+        members: g.members,
+        currentCycle: g.currentCycle
       }));
       setAjoGroupsState(groups);
 
@@ -252,6 +279,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAjoGroups,
     addAjoGroup,
     joinAjoGroup,
+    startAjoGroup,
     contributeToAjo,
     depositToGoal,
     withdrawFromGoal,
