@@ -35,6 +35,7 @@ export interface AppState {
   user: User | null;
   savingsGoals: SavingsGoal[];
   ajoGroups: AjoGroup[];
+  recentTransactions: any[];
   totalBalance: number;
   totalDeposits: number;
   totalWithdrawals: number;

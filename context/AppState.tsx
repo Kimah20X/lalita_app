@@ -1,13 +1,15 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { User, SavingsGoal, AjoGroup } from '@/types';
-import { getItem, saveItem, STORAGE_KEYS } from '@/utils/storage';
+import { getItem, saveItem, deleteItem, STORAGE_KEYS } from '@/utils/storage';
 import i18n from '@/i18n';
 import { AppContext, AppContextType } from './AppContext';
+import api from '@/utils/api';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUserState] = useState<User | null>(null);
   const [savingsGoals, setSavingsGoalsState] = useState<SavingsGoal[]>([]);
   const [ajoGroups, setAjoGroupsState] = useState<AjoGroup[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [totalBalance, setTotalBalance] = useState(0);
   const [totalDeposits, setTotalDeposits] = useState(0);
   const [totalWithdrawals, setTotalWithdrawals] = useState(0);
@@ -24,15 +26,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsLoading(true);
     try {
       const storedUser = await getItem(STORAGE_KEYS.USER);
-      const storedGoals = await getItem(STORAGE_KEYS.SAVINGS_GOALS);
-      const storedGroups = await getItem(STORAGE_KEYS.AJO_GROUPS);
       const storedVisibility = await getItem('isMoneyVisible');
       const storedLanguage = await getItem('language');
       const storedTheme = await getItem('theme');
 
       if (storedUser) setUserState(storedUser);
-      if (storedGoals) setSavingsGoalsState(storedGoals);
-      if (storedGroups) setAjoGroupsState(storedGroups);
       if (storedVisibility !== null) setIsMoneyVisible(storedVisibility);
       if (storedLanguage) {
         setLanguageState(storedLanguage);
@@ -40,12 +38,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       if (storedTheme) setThemeState(storedTheme);
       
-      // Mock some initial data if empty
-      if (!storedGoals || storedGoals.length === 0) {
-        const mockGoals: SavingsGoal[] = [
-          { id: '1', name: 'Business Expansion', savedAmount: 150000, targetAmount: 250000, frequency: 'Weekly', createdAt: new Date().toISOString() },
-        ];
-        setSavingsGoalsState(mockGoals);
+      if (storedUser) {
+        await refreshData();
       }
     } catch (error) {
       console.error('Failed to load initial data', error);
@@ -59,42 +53,164 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     saveItem(STORAGE_KEYS.USER, newUser);
   };
 
+  const login = async (phoneNumber: string, password: string) => {
+    try {
+      const response = await api.post('/auth/login', { phoneNumber, password });
+      const { token, user } = response.data.data;
+      await saveItem('jwt_token', token);
+      setUser(user);
+    } catch (error) {
+      console.error('Login failed', error);
+      throw error;
+    }
+  };
+
+  const joinAjoGroup = async (groupId: string) => {
+    try {
+      await api.post(`/ajo/${groupId}/join`);
+      await refreshData();
+    } catch (error) {
+      console.error('Failed to join Ajo group', error);
+      throw error;
+    }
+  };
+
+  const contributeToAjo = async (groupId: string) => {
+    try {
+      await api.post(`/ajo/${groupId}/contribute`);
+      await refreshData();
+    } catch (error) {
+      console.error('Failed to contribute to Ajo group', error);
+      throw error;
+    }
+  };
+
+  const depositToGoal = async (goalId: string, amount: number) => {
+    try {
+      await api.post(`/goals/${goalId}/deposit`, { amount });
+      await refreshData();
+    } catch (error) {
+      console.error('Failed to deposit to goal', error);
+      throw error;
+    }
+  };
+
+  const withdrawFromGoal = async (goalId: string, amount: number) => {
+    try {
+      await api.post(`/goals/${goalId}/withdraw`, { amount });
+      await refreshData();
+    } catch (error) {
+      console.error('Failed to withdraw from goal', error);
+      throw error;
+    }
+  };
+
+  const register = async (userData: any) => {
+    try {
+      const response = await api.post('/auth/register', userData);
+      const { token, user } = response.data.data;
+      await saveItem('jwt_token', token);
+      setUser(user);
+    } catch (error) {
+      console.error('Registration failed', error);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    await deleteItem('jwt_token');
+    setUser(null);
+  };
+
   const setSavingsGoals = (newGoals: SavingsGoal[]) => {
     setSavingsGoalsState(newGoals);
     saveItem(STORAGE_KEYS.SAVINGS_GOALS, newGoals);
   };
 
+  const refreshData = async () => {
+    try {
+      const [goalsRes, groupsRes, dashboardRes] = await Promise.all([
+        api.get('/goals'),
+        api.get('/ajo'),
+        api.get('/dashboard/summary')
+      ]);
+
+      const goals = goalsRes.data.data.map((g: any) => ({
+        id: g.id,
+        name: g.title,
+        savedAmount: g.currentAmount,
+        targetAmount: g.targetAmount,
+        frequency: g.frequency.charAt(0) + g.frequency.slice(1).toLowerCase(),
+        createdAt: g.createdAt
+      }));
+      setSavingsGoalsState(goals);
+
+      const groups = groupsRes.data.data.map((g: any) => ({
+        id: g.id,
+        name: g.name,
+        totalContributions: 0, // Should be fetched from transactions/members
+        targetAmount: g.contributionAmount * 50, // Mocked max members for now
+        membersCount: g._count.members,
+        contributionAmount: g.contributionAmount,
+        status: 'Active'
+      }));
+      setAjoGroupsState(groups);
+
+      // Update balance if dashboard summary returns it
+      if (dashboardRes.data.data.balance !== undefined) {
+        setTotalBalance(dashboardRes.data.data.balance);
+      }
+      setRecentTransactions(dashboardRes.data.data.recentTransactions);
+    } catch (error) {
+      console.error('Failed to refresh data', error);
+    }
+  };
+
   const setAjoGroups = (newGroups: AjoGroup[]) => {
     setAjoGroupsState(newGroups);
-    saveItem(STORAGE_KEYS.AJO_GROUPS, newGroups);
   };
 
-  const addSavingsGoal = (goal: Omit<SavingsGoal, 'id' | 'createdAt' | 'savedAmount'>) => {
-    const newGoal: SavingsGoal = {
-      ...goal,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toISOString(),
-      savedAmount: 0,
-    };
-    const updatedGoals = [...savingsGoals, newGoal];
-    setSavingsGoals(updatedGoals);
+  const addSavingsGoal = async (goal: Omit<SavingsGoal, 'id' | 'createdAt' | 'savedAmount'>) => {
+    try {
+      await api.post('/goals', {
+        title: goal.name,
+        targetAmount: goal.targetAmount,
+        frequency: goal.frequency.toUpperCase()
+      });
+      await refreshData();
+    } catch (error) {
+      console.error('Failed to add savings goal', error);
+      throw error;
+    }
   };
 
-  const addAjoGroup = (group: Omit<AjoGroup, 'id' | 'status' | 'totalContributions'>) => {
-    const newGroup: AjoGroup = {
-      ...group,
-      id: Math.random().toString(36).substr(2, 9),
-      status: 'Active',
-      totalContributions: 0,
-    };
-    const updatedGroups = [...ajoGroups, newGroup];
-    setAjoGroups(updatedGroups);
+  const addAjoGroup = async (group: Omit<AjoGroup, 'id' | 'status' | 'totalContributions'>) => {
+    try {
+      await api.post('/ajo', {
+        name: group.name,
+        contributionAmount: group.contributionAmount,
+        frequency: 'MONTHLY' // Default for now
+      });
+      await refreshData();
+    } catch (error) {
+      console.error('Failed to add Ajo group', error);
+      throw error;
+    }
   };
 
-  const updateBalance = (amount: number) => {
-    setTotalBalance(prev => prev + amount);
-    if (amount > 0) setTotalDeposits(prev => prev + amount);
-    else setTotalWithdrawals(prev => prev + Math.abs(amount));
+  const updateBalance = async (amount: number) => {
+    try {
+      if (amount > 0) {
+        await api.post('/wallet/deposit', { amount });
+      } else {
+        // Need bank details for actual withdrawal, using placeholder for now
+        await api.post('/wallet/withdraw', { amount: Math.abs(amount), bankDetails: { accountNumber: '0000000000' } });
+      }
+      await refreshData();
+    } catch (error) {
+      console.error('Failed to update balance', error);
+      throw error;
+    }
   };
 
   const toggleMoneyVisibility = () => {
@@ -120,17 +236,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     user,
     savingsGoals,
     ajoGroups,
+    recentTransactions,
     totalBalance,
     totalDeposits,
     totalWithdrawals,
     isMoneyVisible,
     language,
     theme,
+    login,
+    register,
+    logout,
     setUser,
     setSavingsGoals,
     addSavingsGoal,
     setAjoGroups,
     addAjoGroup,
+    joinAjoGroup,
+    contributeToAjo,
+    depositToGoal,
+    withdrawFromGoal,
     updateBalance,
     toggleMoneyVisibility,
     setLanguage,

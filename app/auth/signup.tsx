@@ -4,11 +4,15 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useApp } from '@/context/AppState';
+import { Alert } from 'react-native';
 
 export default function Signup() {
   const router = useRouter();
+  const { register } = useApp();
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     fullName: '',
@@ -17,9 +21,20 @@ export default function Signup() {
     password: '',
   });
 
-  const handleSignup = () => {
-    // Logic will be added with State management
-    router.replace('/(tabs)');
+  const handleSignup = async () => {
+    if (!form.fullName || !form.phoneNumber || !form.password) {
+      Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+    setLoading(true);
+    try {
+      await register(form);
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      Alert.alert('Registration Failed', error.response?.data?.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -87,10 +102,11 @@ export default function Signup() {
           </View>
 
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.primary }]}
+            style={[styles.button, { backgroundColor: colors.primary, opacity: loading ? 0.7 : 1 }]}
             onPress={handleSignup}
+            disabled={loading}
           >
-            <Text style={styles.buttonText}>Create Account</Text>
+            <Text style={styles.buttonText}>{loading ? 'Creating Account...' : 'Create Account'}</Text>
           </TouchableOpacity>
 
           <View style={styles.footer}>
