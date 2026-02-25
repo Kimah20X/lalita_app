@@ -54,6 +54,30 @@ const swaggerDocument = {
         },
       },
     },
+    '/ajo/{id}/start': {
+      post: {
+        tags: ['Ajo'],
+        summary: 'Start an Ajo group (Creator only)',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: 'Success' },
+        },
+      },
+    },
+    '/ajo/{id}/contribute': {
+      post: {
+        tags: ['Ajo'],
+        summary: 'Contribute to an Ajo group',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          200: { description: 'Success' },
+        },
+      },
+    },
     '/auth/login': {
       post: {
         tags: ['Auth'],
@@ -189,6 +213,15 @@ const swaggerDocument = {
       get: {
         tags: ['Transactions'],
         summary: 'Get transaction history',
+        responses: {
+          200: { description: 'Success' },
+        },
+      },
+    },
+    '/wallet/webhook': {
+      post: {
+        tags: ['Wallet'],
+        summary: 'Monnify Webhook',
         responses: {
           200: { description: 'Success' },
         },

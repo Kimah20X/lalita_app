@@ -42,9 +42,33 @@ export const register = async (req: Request, res: Response) => {
           fullName: user.fullName,
           businessType: user.businessType,
           balance: user.balance,
+          expoPushToken: user.expoPushToken,
         },
       },
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+import { AuthRequest } from '../../middleware/auth.middleware';
+
+export const updatePushToken = async (req: AuthRequest, res: Response) => {
+  try {
+    const { token } = req.body;
+    const userId = req.user?.userId;
+
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'Token is required' });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { expoPushToken: token },
+    });
+
+    res.json({ success: true, message: 'Push token updated' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Internal server error' });

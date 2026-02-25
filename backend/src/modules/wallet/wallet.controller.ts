@@ -1,7 +1,74 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthRequest } from '../../middleware/auth.middleware';
 import prisma from '../../utils/prisma';
 import { PaymentService } from '../../services/payment.service';
+import crypto from 'crypto';
+import { NotificationService } from '../../services/notification.service';
+
+export const handleMonnifyWebhook = async (req: Request, res: Response) => {
+  try {
+    const monnifySignature = req.headers['monnify-signature'];
+    const secretKey = process.env.MONNIFY_SECRET_KEY || '';
+
+    // Verify signature
+    const computedSignature = crypto
+      .createHmac('sha512', secretKey)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
+
+    if (computedSignature !== monnifySignature) {
+      return res.status(401).json({ success: false, message: 'Invalid signature' });
+    }
+
+    const { eventType, eventData } = req.body;
+
+    if (eventType === 'SUCCESSFUL_TRANSACTION') {
+      const { customer, amountPaid, transactionReference, paymentReference } = eventData;
+
+      // Find user by email or phone (Monnify customer usually has email/phone)
+      // Assuming phone number is used as external reference or customer identifier
+      const user = await prisma.user.findUnique({
+        where: { phoneNumber: customer.phone || customer.email } // Simple mapping for now
+      });
+
+      if (user) {
+        // Prevent double processing
+        const existingTx = await prisma.transaction.findUnique({
+          where: { reference: transactionReference }
+        });
+
+        if (!existingTx) {
+          await prisma.$transaction([
+            prisma.user.update({
+              where: { id: user.id },
+              data: { balance: { increment: amountPaid } }
+            }),
+            prisma.transaction.create({
+              data: {
+                userId: user.id,
+                amount: amountPaid,
+                type: 'DEPOSIT',
+                reference: transactionReference
+              }
+            })
+          ]);
+
+          // Send notification
+          await NotificationService.sendToUser(
+            user.id,
+            'Wallet Deposit Successful',
+            `₦${amountPaid.toLocaleString()} has been added to your wallet.`
+          );
+        }
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Webhook error:', error);
+    res.status(500).json({ success: false });
+  }
+};
 
 export const depositToWallet = async (req: AuthRequest, res: Response) => {
   try {

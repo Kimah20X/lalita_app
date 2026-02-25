@@ -7,18 +7,19 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(uuid())
-  phoneNumber  String         @unique
-  password     String
-  fullName     String
-  businessType String?
-  balance      Float          @default(0)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  savingsGoals SavingsGoal[]
-  ajoMembers   AjoMember[]
-  transactions Transaction[]
-  ajoGroups    AjoGroup[]     @relation("GroupCreator")
+  id            String         @id @default(uuid())
+  phoneNumber   String         @unique
+  password      String
+  fullName      String
+  businessType  String?
+  balance       Float          @default(0)
+  expoPushToken String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  savingsGoals  SavingsGoal[]
+  ajoMembers    AjoMember[]
+  transactions  Transaction[]
+  ajoGroups     AjoGroup[]     @relation("GroupCreator")
 }
 
 model SavingsGoal {
@@ -35,25 +36,29 @@ model SavingsGoal {
 }
 
 model AjoGroup {
-  id                 String      @id @default(uuid())
+  id                 String         @id @default(uuid())
   name               String
   contributionAmount Float
   frequency          Frequency
+  status             AjoGroupStatus @default(OPEN)
   creatorId          String
-  creator            User        @relation("GroupCreator", fields: [creatorId], references: [id])
+  creator            User           @relation("GroupCreator", fields: [creatorId], references: [id])
   members            AjoMember[]
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
+  currentCycle       Int            @default(1)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
   transactions       Transaction[]
 }
 
 model AjoMember {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  groupId   String
-  group     AjoGroup @relation(fields: [groupId], references: [id])
-  joinedAt  DateTime @default(now())
+  id           String       @id @default(uuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  groupId      String
+  group        AjoGroup     @relation(fields: [groupId], references: [id])
+  payoutOrder  Int?
+  payoutStatus PayoutStatus @default(PENDING)
+  joinedAt     DateTime     @default(now())
 
   @@unique([userId, groupId])
 }
@@ -62,6 +67,7 @@ model Transaction {
   id             String          @id @default(uuid())
   type           TransactionType
   amount         Float
+  reference      String?         @unique
   userId         String
   user           User            @relation(fields: [userId], references: [id])
   relatedGoalId  String?
@@ -81,4 +87,16 @@ enum TransactionType {
   DEPOSIT
   WITHDRAWAL
   AJO_CONTRIBUTION
+  AJO_PAYOUT
+}
+
+enum AjoGroupStatus {
+  OPEN
+  ACTIVE
+  COMPLETED
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
 }

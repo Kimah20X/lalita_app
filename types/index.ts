@@ -28,7 +28,10 @@ export interface AjoGroup {
   membersCount: number;
   contributionAmount: number;
   nextPayoutDate?: string;
-  status: 'Active' | 'Completed';
+  status: 'OPEN' | 'ACTIVE' | 'COMPLETED';
+  creatorId: string;
+  members?: any[];
+  currentCycle?: number;
 }
 
 export interface AppState {
